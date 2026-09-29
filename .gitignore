@@ -1,0 +1,19 @@
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Unity temporary files
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+*.csproj
+*.unityproj
+*.sln
+*.pidb.meta
+*.pdb
+*.mdb
