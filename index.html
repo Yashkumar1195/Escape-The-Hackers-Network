@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Escape the Hacker's Network — Cyber Defense Simulation</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+  body {
+    background: #030712;
+    color: #e2e8f0;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 10px;
+    overflow: hidden;
+  }
+  #game-wrapper {
+    width: 100%;
+    max-width: 1280px;
+    aspect-ratio: 16 / 9;
+    position: relative;
+    background: #0b0f19;
+    border: 2px solid #06b6d4;
+    border-radius: 12px;
+    box-shadow: 0 0 50px rgba(6, 182, 212, 0.4);
+    overflow: hidden;
+  }
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    background-size: cover;
+    background-position: center;
+  }
+  .screen.active { display: flex; }
+
+  /* SCREEN 1: MAIN MENU */
+  #screen-menu {
+    background-image: url('Game_Assets/Environment/lightning-xl_Futuristic_cyberpunk_city_skyline_at_night_towering_holographic_skyscrapers_glow-2.jpg');
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background-color: rgba(3, 7, 18, 0.72);
+    background-blend-mode: overlay;
+  }
+  .title-glow {
+    font-size: clamp(32px, 5vw, 56px);
+    font-weight: 900;
+    letter-spacing: 4px;
+    color: #38bdf8;
+    text-shadow: 0 0 25px #0284c7, 0 0 50px #0369a1;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+  .subtitle {
+    font-size: clamp(14px, 2vw, 18px);
+    color: #94a3b8;
+    margin-bottom: 35px;
+    letter-spacing: 2px;
+  }
+  .menu-btn {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(14, 165, 233, 0.45));
+    border: 1px solid #38bdf8;
+    color: #f8fafc;
+    padding: 14px 44px;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin: 8px;
+    transition: all 0.25s ease;
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+  }
+  .menu-btn:hover {
+    background: #0284c7;
+    box-shadow: 0 0 30px #38bdf8;
+    transform: scale(1.04);
+  }
+
+  /* SCREEN 2: CYBER ROOM HUB */
+  #screen-room {
+    background-image: url('Game_Assets/Environment/Cyber_Room_Background.jpg');
+    position: relative;
+  }
+  #room-hud {
+    position: absolute;
+    top: 16px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    background: rgba(15, 23, 42, 0.88);
+    border: 1px solid #06b6d4;
+    border-radius: 8px;
+    backdrop-filter: blur(8px);
+    z-index: 10;
+  }
+  .hud-stat {
+    font-weight: bold;
+    font-size: 15px;
+    color: #38bdf8;
+    letter-spacing: 1px;
+  }
+  #player-avatar {
+    position: absolute;
+    width: 64px;
+    height: 96px;
+    bottom: 110px;
+    left: 140px;
+    background-image: url('Game_Assets/Characters/Player_Sprite_Sheet.jpg');
+    background-size: 800px 800px;
+    background-position: -20px -20px;
+    border-radius: 6px;
+    filter: drop-shadow(0 0 10px #06b6d4);
+    transition: transform 0.05s linear;
+  }
+  #terminal-zone {
+    position: absolute;
+    bottom: 110px;
+    right: 280px;
+    width: 140px;
+    height: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .interact-badge {
+    display: none;
+    background: #ef4444;
+    color: white;
+    font-weight: bold;
+    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: 4px;
+    box-shadow: 0 0 20px #ef4444;
+    animation: pulse 1s infinite alternate;
+    margin-bottom: 8px;
+  }
+  @keyframes pulse { from { opacity: 0.7; transform: scale(0.96); } to { opacity: 1; transform: scale(1.04); } }
+  #airi-dialogue-bar {
+    position: absolute;
+    bottom: 16px;
+    left: 20px;
+    right: 20px;
+    background: rgba(15, 23, 42, 0.95);
+    border: 2px solid #38bdf8;
+    border-radius: 8px;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 0 25px rgba(56, 189, 248, 0.4);
+    z-index: 10;
+  }
+  .airi-portrait-thumb {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 2px solid #38bdf8;
+    background-image: url('Game_Assets/Characters/AIRI_Companion_Sheet.jpg');
+    background-size: 600px 600px;
+    background-position: -15px -15px;
+    flex-shrink: 0;
+  }
+
+  /* SCREEN 3: PHISHING DETECTIVE TERMINAL */
+  #screen-terminal {
+    background: rgba(3, 7, 18, 0.96);
+    padding: 24px;
+    display: none;
+    flex-direction: column;
+  }
+  .terminal-window {
+    flex: 1;
+    border: 2px solid #06b6d4;
+    border-radius: 8px;
+    background: #090e17;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 0 30px rgba(6, 182, 212, 0.3);
+  }
+  .terminal-header {
+    background: #0f172a;
+    padding: 10px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #1e293b;
+    font-weight: bold;
+    color: #38bdf8;
+    font-size: 14px;
+  }
+  .terminal-body {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+  .inbox-list {
+    width: 300px;
+    border-right: 1px solid #1e293b;
+    background: #0b111e;
+    overflow-y: auto;
+  }
+  .inbox-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #1e293b;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background 0.2s;
+  }
+  .inbox-item.active {
+    background: rgba(6, 182, 212, 0.15);
+    border-left: 4px solid #38bdf8;
+  }
+  .inbox-item:hover { background: rgba(56, 189, 248, 0.1); }
+  .email-viewer {
+    flex: 1;
+    padding: 18px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: #070c14;
+    overflow-y: auto;
+  }
+  .email-header-meta {
+    background: #0f172a;
+    padding: 14px;
+    border-radius: 6px;
+    border-left: 4px solid #06b6d4;
+    margin-bottom: 12px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .email-body-text {
+    font-size: 14px;
+    line-height: 1.7;
+    color: #cbd5e1;
+    white-space: pre-line;
+    background: #0a101d;
+    padding: 16px;
+    border-radius: 6px;
+    flex: 1;
+    margin-bottom: 12px;
+  }
+  .decision-bar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 14px;
+  }
+  .btn-phish {
+    background: #dc2626;
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 0 0 15px rgba(220, 38, 38, 0.4);
+    font-size: 14px;
+  }
+  .btn-safe {
+    background: #059669;
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 0 0 15px rgba(5, 150, 105, 0.4);
+    font-size: 14px;
+  }
+  .btn-phish:hover { background: #b91c1c; transform: scale(1.03); }
+  .btn-safe:hover { background: #047857; transform: scale(1.03); }
+
+  #feedback-banner {
+    display: none;
+    padding: 12px 18px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    font-weight: bold;
+    font-size: 14px;
+  }
+  .fb-correct { background: rgba(5, 150, 105, 0.2); border: 1px solid #10b981; color: #34d399; }
+  .fb-wrong { background: rgba(220, 38, 38, 0.2); border: 1px solid #ef4444; color: #f87171; }
+
+  /* SCREEN 4: VICTORY & PROGRESSION */
+  #screen-victory {
+    background-image: url('Game_Assets/Environment/lightning-xl_Futuristic_cyberpunk_city_skyline_at_night_towering_holographic_skyscrapers_glow-3.jpg');
+    background-color: rgba(3, 7, 18, 0.85);
+    background-blend-mode: overlay;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  .victory-card {
+    background: rgba(15, 23, 42, 0.95);
+    border: 2px solid #10b981;
+    border-radius: 12px;
+    padding: 30px 40px;
+    box-shadow: 0 0 50px rgba(16, 185, 129, 0.3);
+    max-width: 520px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .badge-img {
+    width: 120px;
+    height: 120px;
+    margin-bottom: 16px;
+    filter: drop-shadow(0 0 20px #10b981);
+  }
+
+  /* MOBILE / ON-SCREEN CONTROLS */
+  .mobile-controls {
+    position: absolute;
+    bottom: 90px;
+    left: 20px;
+    display: flex;
+    gap: 12px;
+    z-index: 20;
+  }
+  .touch-btn {
+    background: rgba(6, 182, 212, 0.3);
+    border: 1px solid #38bdf8;
+    color: white;
+    padding: 10px 18px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div id="game-wrapper">
+  <!-- AUDIO ASSETS -->
+  <audio id="audio-bgm" src="Game_Assets/Audio/Escape the Hacker_s Network OST.mp3" loop></audio>
+  <audio id="audio-boot" src="Game_Assets/Audio/Computer Terminal Boot Beep.mp3"></audio>
+  <audio id="audio-siren" src="Game_Assets/Audio/Phishing Alert Siren  Alarm.mp3"></audio>
+  <audio id="audio-chime" src="Game_Assets/Audio/Success  Firewall Restored Chime.mp3"></audio>
+
+  <!-- SCREEN 1: MAIN MENU -->
+  <div id="screen-menu" class="screen active">
+    <div class="title-glow">Escape the Hacker's Network</div>
+    <div class="subtitle">PROJECT-BASED LEARNING // CYBER-DEFENSE SIMULATION v1.0</div>
+    <button class="menu-btn" onclick="startGame()">INITIALIZE MISSION</button>
+    <button class="menu-btn" onclick="alert('Controls: Arrow Keys or WASD (or on-screen buttons) to Move. Press [E] at the Terminal.')">HOW TO PLAY</button>
+  </div>
+
+  <!-- SCREEN 2: CYBER ROOM HUB -->
+  <div id="screen-room" class="screen">
+    <div id="room-hud">
+      <div class="hud-stat">OPERATIVE: REI (CYBER DETECTIVE)</div>
+      <div class="hud-stat">FIREWALL INTEGRITY: <span id="room-integrity">100%</span></div>
+      <div class="hud-stat">OBJECTIVE: ACCESS SECURITY TERMINAL</div>
+    </div>
+
+    <div id="player-avatar"></div>
+
+    <div id="terminal-zone">
+      <div id="prompt-badge" class="interact-badge" onclick="openTerminal()">[ E ] ACCESS TERMINAL</div>
+    </div>
+
+    <div class="mobile-controls">
+      <button class="touch-btn" onclick="movePlayer(-30)">⬅ LEFT</button>
+      <button class="touch-btn" onclick="movePlayer(30)">RIGHT ➡</button>
+      <button class="touch-btn" style="background: #ef4444;" onclick="openTerminal()">[ E ] ACTION</button>
+    </div>
+
+    <div id="airi-dialogue-bar">
+      <div class="airi-portrait-thumb"></div>
+      <div>
+        <strong style="color: #38bdf8;">AIRI:</strong>
+        <span id="airi-speech">Rei, ZERO's rogue scripts are penetrating the perimeter! Move with Arrow Keys / WASD and press [E] at the terminal to analyze incoming threats.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: PHISHING DETECTIVE TERMINAL -->
+  <div id="screen-terminal" class="screen">
+    <div class="terminal-window">
+      <div class="terminal-header">
+        <span>FIREWALL GATEWAY // PHISHING DETECTIVE (LEVEL 1)</span>
+        <span id="score-display">XP: 0 | ACCURACY: 0/5</span>
+        <span id="integrity-display" style="color: #34d399;">INTEGRITY: 100%</span>
+      </div>
+      <div class="terminal-body">
+        <div class="inbox-list" id="inbox-container"></div>
+        <div class="email-viewer">
+          <div id="feedback-banner"></div>
+          <div class="email-header-meta">
+            <div><strong style="color: #38bdf8;">From:</strong> <span id="view-sender"></span></div>
+            <div><strong style="color: #38bdf8;">Subject:</strong> <span id="view-subject"></span></div>
+            <div id="view-link-row" style="margin-top: 6px;"><strong style="color: #fbbf24;">Target Link:</strong> <span id="view-link"></span></div>
+            <div id="view-attach-row" style="display: none; margin-top: 4px;"><strong style="color: #f87171;">Attachment:</strong> <span id="view-attach"></span></div>
+          </div>
+          <div class="email-body-text" id="view-body"></div>
+          <div class="decision-bar">
+            <button class="btn-phish" onclick="makeDecision(true)">🚩 REPORT PHISHING</button>
+            <button class="btn-safe" onclick="makeDecision(false)">🛡️ MARK AS SAFE</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 4: VICTORY & PROGRESSION -->
+  <div id="screen-victory" class="screen">
+    <div class="victory-card">
+      <img src="Game_Assets/UI_Minigames/Firewall_Restored_Badge.png" class="badge-img" alt="Badge">
+      <h2 style="color: #10b981; font-size: 26px; margin-bottom: 8px;">FIREWALL RESTORED!</h2>
+      <p style="color: #94a3b8; margin-bottom: 16px;">Threat perimeter locked down. Zero's phishing attack mitigated.</p>
+      <div style="font-size: 17px; margin-bottom: 10px; color: #38bdf8;" id="final-stats">Total XP: 500 | Grade: RANK S</div>
+      <p style="font-size: 13px; color: #e2e8f0; margin-bottom: 20px;">Level 2 (Password Fortress) blast door is now unlocked in the control hub.</p>
+      <button class="menu-btn" onclick="restartToRoom()">CONTINUE MISSION</button>
+      <button class="menu-btn" onclick="location.reload()">RETURN TO MENU</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const bgm = document.getElementById('audio-bgm');
+  const sfxBoot = document.getElementById('audio-boot');
+  const sfxSiren = document.getElementById('audio-siren');
+  const sfxChime = document.getElementById('audio-chime');
+
+  function playSFX(audioElem) {
+    if (audioElem) {
+      audioElem.currentTime = 0;
+      audioElem.play().catch(e => console.log('Audio pending user interaction'));
+    }
+  }
+
+  function showScreen(screenId) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(screenId).classList.add('active');
+  }
+
+  function startGame() {
+    bgm.volume = 0.35;
+    bgm.play().catch(() => {});
+    showScreen('screen-room');
+  }
+
+  let posX = 140;
+  let moveLocked = false;
+  const player = document.getElementById('player-avatar');
+  const promptBadge = document.getElementById('prompt-badge');
+  const terminalTriggerX = 860;
+
+  function movePlayer(delta) {
+    if (moveLocked) return;
+    posX = Math.max(80, Math.min(1080, posX + delta));
+    player.style.left = posX + 'px';
+    player.style.transform = delta >= 0 ? 'scaleX(1)' : 'scaleX(-1)';
+
+    if (Math.abs(posX - terminalTriggerX) < 110) {
+      promptBadge.style.display = 'block';
+    } else {
+      promptBadge.style.display = 'none';
+    }
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (document.getElementById('screen-room').classList.contains('active') && !moveLocked) {
+      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+        movePlayer(20);
+      } else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+        movePlayer(-20);
+      } else if (e.key === 'e' || e.key === 'E') {
+        if (Math.abs(posX - terminalTriggerX) < 110) {
+          openTerminal();
+        }
+      }
+    }
+  });
+
+  function openTerminal() {
+    moveLocked = true;
+    playSFX(sfxBoot);
+    showScreen('screen-terminal');
+    renderEmails();
+  }
+
+  const emails = [
+    {
+      id: 1,
+      sender: "Security Support <security.support@micr0soft.co>",
+      subject: "URGENT: Suspicious Activity Detected - Immediate Action Required!",
+      link: "https://micr0soft-login.net/verify-token?id=99281",
+      attach: "Account_Log.zip",
+      body: "Dear Valued User,\n\nWe detected unauthorized login attempts from an untrusted IP address. You must verify your credentials within 15 minutes or your account will be permanently deactivated.",
+      isPhish: true,
+      explanation: "Look closely at the sender domain: 'micr0soft.co' with a zero instead of 'o', paired with artificial urgency and a fake login link!"
+    },
+    {
+      id: 2,
+      sender: "GitHub Security <notifications@github.com>",
+      subject: "[GitHub] Security update for your repository",
+      link: "https://github.com/my-pbl-project/security/dependabot/1",
+      attach: "",
+      body: "Hello,\n\nDependabot has found a low-severity vulnerability in one of your project manifests. Review the automated pull request when you are available.",
+      isPhish: false,
+      explanation: "Verified official domain (github.com), verified HTTPS link, and standard technical alert without panic tactics."
+    },
+    {
+      id: 3,
+      sender: "Corporate Payroll <billing@payroll-portal-update.xyz>",
+      subject: "Action Required: Update Bank Details for Month End",
+      link: "http://payroll-update.xyz/login.php",
+      attach: "Salary_Invoice_Updater.exe",
+      body: "All employees must install the attached accounting utility and submit their banking routing numbers before 5:00 PM today for salary processing.",
+      isPhish: true,
+      explanation: "Dangerous executable (.exe) attachment disguised as an invoice, plus an unofficial .xyz top-level domain!"
+    },
+    {
+      id: 4,
+      sender: "Campus IT Helpdesk <helpdesk@university-portal.edu>",
+      subject: "Notice: Scheduled Campus Network Maintenance Saturday",
+      link: "",
+      attach: "",
+      body: "Please be advised that core network switches will be upgraded this Saturday from 2:00 AM to 5:00 AM. No passwords or user actions are needed.",
+      isPhish: false,
+      explanation: "Genuine institutional communication (.edu domain) with no password prompts or suspicious files."
+    },
+    {
+      id: 5,
+      sender: "Cloud Storage Support <support@apple-id-recovery-center.info>",
+      subject: "Storage Capacity Exceeded - Account Flagged for Deletion",
+      link: "https://apple-storage-renewal.info/auth?ref=alert",
+      attach: "Storage_Report.pdf",
+      body: "Your cloud backup has exceeded 99% storage quota. All photos, project archives, and keys will be wiped unless renewed right now.",
+      isPhish: true,
+      explanation: "Classic extortion fear tactic using an imitation third-party domain instead of official apple.com!"
+    }
+  ];
+
+  let currentIdx = 0;
+  let score = 0;
+  let correctDecisions = 0;
+  let integrity = 100;
+  let evaluated = [false, false, false, false, false];
+
+  function renderEmails() {
+    const list = document.getElementById('inbox-container');
+    list.innerHTML = '';
+    emails.forEach((em, i) => {
+      const item = document.createElement('div');
+      item.className = 'inbox-item' + (i === currentIdx ? ' active' : '');
+      item.innerHTML = `<strong>#${em.id} ${em.subject.substring(0, 26)}...</strong><br><small style="color: #64748b;">${em.sender.split('<')[0]}</small>`;
+      item.onclick = () => { currentIdx = i; renderEmails(); };
+      list.appendChild(item);
+    });
+
+    const curr = emails[currentIdx];
+    document.getElementById('view-sender').textContent = curr.sender;
+    document.getElementById('view-subject').textContent = curr.subject;
+    document.getElementById('view-link').textContent = curr.link || 'None (Clean)';
+    document.getElementById('view-body').textContent = curr.body;
+
+    const attachRow = document.getElementById('view-attach-row');
+    if (curr.attach) {
+      attachRow.style.display = 'block';
+      document.getElementById('view-attach').textContent = curr.attach;
+    } else {
+      attachRow.style.display = 'none';
+    }
+
+    document.getElementById('feedback-banner').style.display = 'none';
+  }
+
+  function makeDecision(chosenPhish) {
+    if (evaluated[currentIdx]) return;
+    evaluated[currentIdx] = true;
+
+    const curr = emails[currentIdx];
+    const isCorrect = (chosenPhish === curr.isPhish);
+    const fb = document.getElementById('feedback-banner');
+
+    if (isCorrect) {
+      score += 100;
+      correctDecisions++;
+      playSFX(sfxChime);
+      fb.className = 'fb-correct';
+      fb.innerHTML = `✅ CORRECT DECISION! (+100 XP)<br>${curr.explanation}`;
+    } else {
+      integrity = Math.max(0, integrity - 25);
+      playSFX(sfxSiren);
+      fb.className = 'fb-wrong';
+      fb.innerHTML = `⚠️ SECURITY BREACH! (-25% Firewall)<br>${curr.explanation}`;
+    }
+    fb.style.display = 'block';
+
+    document.getElementById('score-display').textContent = `XP: ${score} | ACCURACY: ${correctDecisions}/5`;
+    document.getElementById('integrity-display').textContent = `INTEGRITY: ${integrity}%`;
+    document.getElementById('room-integrity').textContent = `${integrity}%`;
+
+    setTimeout(() => {
+      if (currentIdx + 1 < emails.length) {
+        currentIdx++;
+        renderEmails();
+      } else {
+        showScreen('screen-victory');
+        playSFX(sfxChime);
+        document.getElementById('final-stats').textContent = `Total XP: ${score} | Accuracy: ${correctDecisions}/5 | Firewall: ${integrity}%`;
+      }
+    }, 2400);
+  }
+
+  function restartToRoom() {
+    moveLocked = false;
+    showScreen('screen-room');
+    document.getElementById('airi-speech').textContent = "Excellent job, Rei! The firewall perimeter is secure. Walk right to the unlocked blast door to access Level 2: Password Fortress!";
+  }
+</script>
+</body>
+</html>
