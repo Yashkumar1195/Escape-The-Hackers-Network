@@ -3,29 +3,84 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Escape the Hacker's Network — Playable PBL Demo</title>
+<title>Escape the Hacker's Network — Cyber Defense Simulation</title>
 <style>
+  :root {
+    --cyan: #06b6d4;
+    --cyan-glow: #38bdf8;
+    --red: #ef4444;
+    --green: #10b981;
+    --amber: #f59e0b;
+    --bg-dark: #030712;
+    --panel-bg: rgba(15, 23, 42, 0.88);
+    --border-glow: rgba(56, 189, 248, 0.4);
+  }
+
   * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+
   body {
-    background: #030712;
+    background: var(--bg-dark);
     color: #e2e8f0;
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+    padding: 10px;
     overflow: hidden;
   }
-  #game-container {
-    width: 1280px;
-    height: 720px;
+
+  /* GAME CONTAINER (16:9 Aspect Ratio) */
+  #game-wrapper {
+    width: 100%;
+    max-width: 1280px;
+    aspect-ratio: 16 / 9;
     position: relative;
-    background: #0b0f19;
-    border: 2px solid #06b6d4;
+    background: #090d16;
+    border: 2px solid var(--cyan);
     border-radius: 12px;
-    box-shadow: 0 0 50px rgba(6, 182, 212, 0.35);
+    box-shadow: 0 0 50px var(--border-glow), inset 0 0 30px rgba(6, 182, 212, 0.15);
     overflow: hidden;
   }
+
+  /* CRT Scanline Overlay */
+  #game-wrapper::after {
+    content: " ";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+    background-size: 100% 3px, 6px 100%;
+    pointer-events: none;
+    z-index: 99;
+  }
+
+  /* AUDIO CONTROLLER BAR (Persistent Top-Right) */
+  #audio-ctrl {
+    position: absolute;
+    top: 14px;
+    right: 18px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid var(--cyan);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--cyan-glow);
+    backdrop-filter: blur(8px);
+  }
+  #mute-btn {
+    background: none;
+    border: none;
+    color: #f8fafc;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  /* SCREEN BASE */
   .screen {
     position: absolute;
     inset: 0;
@@ -36,93 +91,137 @@
   }
   .screen.active { display: flex; }
 
-  /* SCREEN 1: MAIN MENU */
+  /* ============================================================
+     SCREEN 1: MAIN MENU
+     ============================================================ */
   #screen-menu {
-    background-image: url('../Game_Assets/Environment/lightning-xl_Futuristic_cyberpunk_city_skyline_at_night_towering_holographic_skyscrapers_glow-2.jpg');
+    background-image: url('Game_Assets/Environment/lightning-xl_Futuristic_cyberpunk_city_skyline_at_night_towering_holographic_skyscrapers_glow-2.jpg');
     justify-content: center;
     align-items: center;
     text-align: center;
-    background-color: rgba(3, 7, 18, 0.7);
+    background-color: rgba(3, 7, 18, 0.72);
     background-blend-mode: overlay;
   }
+
   .title-glow {
-    font-size: 52px;
+    font-size: clamp(32px, 4.5vw, 54px);
     font-weight: 900;
     letter-spacing: 4px;
-    color: #38bdf8;
+    color: var(--cyan-glow);
     text-shadow: 0 0 25px #0284c7, 0 0 50px #0369a1;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     text-transform: uppercase;
   }
+
   .subtitle {
-    font-size: 18px;
+    font-size: clamp(13px, 1.8vw, 17px);
     color: #94a3b8;
-    margin-bottom: 40px;
+    margin-bottom: 30px;
     letter-spacing: 2px;
   }
+
   .menu-btn {
-    background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(14, 165, 233, 0.4));
-    border: 1px solid #38bdf8;
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(14, 165, 233, 0.45));
+    border: 1px solid var(--cyan-glow);
     color: #f8fafc;
-    padding: 14px 48px;
-    font-size: 20px;
+    padding: 13px 40px;
+    font-size: 17px;
     font-weight: 700;
     letter-spacing: 2px;
     border-radius: 6px;
     cursor: pointer;
-    margin: 10px;
+    margin: 8px;
     transition: all 0.25s ease;
-    box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.25);
   }
   .menu-btn:hover {
     background: #0284c7;
-    box-shadow: 0 0 30px #38bdf8;
-    transform: scale(1.05);
+    box-shadow: 0 0 30px var(--cyan-glow);
+    transform: scale(1.04);
   }
 
-  /* SCREEN 2: CYBER ROOM HUB */
+  /* MODAL WINDOWS */
+  .modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(3, 7, 18, 0.85);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 150;
+    backdrop-filter: blur(6px);
+  }
+  .modal-content {
+    background: rgba(15, 23, 42, 0.95);
+    border: 2px solid var(--cyan);
+    border-radius: 10px;
+    padding: 30px 36px;
+    max-width: 620px;
+    box-shadow: 0 0 40px var(--border-glow);
+    line-height: 1.6;
+  }
+  .modal-content h3 { color: var(--cyan-glow); margin-bottom: 14px; font-size: 22px; }
+  .modal-content p { color: #cbd5e1; margin-bottom: 12px; font-size: 14px; }
+  .close-modal-btn {
+    background: #0284c7;
+    color: white;
+    border: none;
+    padding: 8px 24px;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+
+  /* ============================================================
+     SCREEN 2: CYBER ROOM HUB
+     ============================================================ */
   #screen-room {
-    background-image: url('../Game_Assets/Environment/Cyber_Room_Background.jpg');
+    background-image: url('Game_Assets/Environment/Cyber_Room_Background.jpg');
     position: relative;
   }
+
   #room-hud {
     position: absolute;
-    top: 20px;
-    left: 20px;
-    right: 20px;
+    top: 14px;
+    left: 18px;
+    right: 18px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 24px;
-    background: rgba(15, 23, 42, 0.85);
-    border: 1px solid #06b6d4;
+    padding: 10px 18px;
+    background: var(--panel-bg);
+    border: 1px solid var(--cyan);
     border-radius: 8px;
     backdrop-filter: blur(8px);
     z-index: 10;
   }
   .hud-stat {
     font-weight: bold;
-    font-size: 16px;
-    color: #38bdf8;
+    font-size: 14px;
+    color: var(--cyan-glow);
     letter-spacing: 1px;
   }
+
   #player-avatar {
     position: absolute;
     width: 64px;
     height: 96px;
-    bottom: 120px;
+    bottom: 110px;
     left: 140px;
-    background-image: url('../Game_Assets/Characters/Player_Sprite_Sheet.jpg');
+    background-image: url('Game_Assets/Characters/Player_Sprite_Sheet.jpg');
     background-size: 800px 800px;
     background-position: -20px -20px;
     border-radius: 6px;
-    filter: drop-shadow(0 0 10px #06b6d4);
+    filter: drop-shadow(0 0 10px var(--cyan));
     transition: transform 0.05s linear;
+    z-index: 5;
   }
+
   #terminal-zone {
     position: absolute;
     bottom: 110px;
-    right: 280px;
+    right: 320px;
     width: 140px;
     height: 120px;
     display: flex;
@@ -130,54 +229,106 @@
     align-items: center;
     justify-content: center;
   }
+
+  #door-zone {
+    position: absolute;
+    bottom: 110px;
+    right: 60px;
+    width: 120px;
+    height: 140px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
   .interact-badge {
     display: none;
-    background: #ef4444;
+    background: var(--red);
     color: white;
     font-weight: bold;
-    font-size: 13px;
+    font-size: 12px;
     padding: 6px 12px;
     border-radius: 4px;
-    box-shadow: 0 0 20px #ef4444;
+    box-shadow: 0 0 20px var(--red);
     animation: pulse 1s infinite alternate;
-    margin-bottom: 8px;
+    cursor: pointer;
   }
-  @keyframes pulse { from { opacity: 0.7; transform: scale(0.96); } to { opacity: 1; transform: scale(1.04); } }
+  .door-badge {
+    display: none;
+    background: var(--amber);
+    color: black;
+    font-weight: bold;
+    font-size: 11px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    box-shadow: 0 0 15px var(--amber);
+    cursor: pointer;
+  }
+  .door-badge.unlocked {
+    background: var(--green);
+    color: white;
+    box-shadow: 0 0 20px var(--green);
+  }
+  @keyframes pulse { from { opacity: 0.75; transform: scale(0.96); } to { opacity: 1; transform: scale(1.04); } }
+
   #airi-dialogue-bar {
     position: absolute;
-    bottom: 20px;
-    left: 40px;
-    right: 40px;
+    bottom: 14px;
+    left: 18px;
+    right: 18px;
     background: rgba(15, 23, 42, 0.95);
-    border: 2px solid #38bdf8;
+    border: 2px solid var(--cyan-glow);
     border-radius: 8px;
-    padding: 16px 24px;
+    padding: 12px 18px;
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 16px;
     box-shadow: 0 0 25px rgba(56, 189, 248, 0.4);
     z-index: 10;
   }
   .airi-portrait-thumb {
-    width: 68px;
-    height: 68px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
-    border: 2px solid #38bdf8;
-    background-image: url('../Game_Assets/Characters/AIRI_Companion_Sheet.jpg');
+    border: 2px solid var(--cyan-glow);
+    background-image: url('Game_Assets/Characters/AIRI_Companion_Sheet.jpg');
     background-size: 600px 600px;
     background-position: -15px -15px;
+    flex-shrink: 0;
   }
 
-  /* SCREEN 3: PHISHING DETECTIVE TERMINAL */
+  .mobile-controls {
+    position: absolute;
+    bottom: 84px;
+    left: 20px;
+    display: flex;
+    gap: 10px;
+    z-index: 20;
+  }
+  .touch-btn {
+    background: rgba(6, 182, 212, 0.3);
+    border: 1px solid var(--cyan-glow);
+    color: white;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  /* ============================================================
+     SCREEN 3: PHISHING DETECTIVE TERMINAL
+     ============================================================ */
   #screen-terminal {
     background: rgba(3, 7, 18, 0.96);
-    padding: 30px;
+    padding: 20px;
     display: none;
     flex-direction: column;
   }
   .terminal-window {
     flex: 1;
-    border: 2px solid #06b6d4;
+    border: 2px solid var(--cyan);
     border-radius: 8px;
     background: #090e17;
     display: flex;
@@ -187,109 +338,192 @@
   }
   .terminal-header {
     background: #0f172a;
-    padding: 12px 20px;
+    padding: 10px 18px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid #1e293b;
     font-weight: bold;
-    color: #38bdf8;
-    letter-spacing: 1px;
+    color: var(--cyan-glow);
+    font-size: 13px;
   }
   .terminal-body {
     flex: 1;
     display: flex;
+    overflow: hidden;
   }
   .inbox-list {
-    width: 320px;
+    width: 290px;
     border-right: 1px solid #1e293b;
     background: #0b111e;
     overflow-y: auto;
   }
   .inbox-item {
-    padding: 14px 18px;
+    padding: 12px 14px;
     border-bottom: 1px solid #1e293b;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 13px;
     transition: background 0.2s;
   }
   .inbox-item.active {
-    background: rgba(6, 182, 212, 0.15);
-    border-left: 4px solid #38bdf8;
+    background: rgba(6, 182, 212, 0.18);
+    border-left: 4px solid var(--cyan-glow);
   }
   .inbox-item:hover { background: rgba(56, 189, 248, 0.1); }
   .email-viewer {
     flex: 1;
-    padding: 24px;
+    padding: 16px 20px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     background: #070c14;
+    overflow-y: auto;
   }
   .email-header-meta {
     background: #0f172a;
-    padding: 16px;
+    padding: 12px 16px;
     border-radius: 6px;
-    border-left: 4px solid #06b6d4;
-    margin-bottom: 16px;
-    font-size: 15px;
-    line-height: 1.6;
+    border-left: 4px solid var(--cyan);
+    margin-bottom: 10px;
+    font-size: 13px;
+    line-height: 1.5;
   }
   .email-body-text {
-    font-size: 15px;
-    line-height: 1.8;
+    font-size: 14px;
+    line-height: 1.6;
     color: #cbd5e1;
     white-space: pre-line;
     background: #0a101d;
-    padding: 18px;
+    padding: 14px;
     border-radius: 6px;
     flex: 1;
+    margin-bottom: 10px;
+    overflow-y: auto;
   }
   .decision-bar {
     display: flex;
-    justify-content: flex-end;
-    gap: 16px;
-    margin-top: 16px;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
   }
   .btn-phish {
     background: #dc2626;
     color: white;
     border: none;
-    padding: 12px 28px;
+    padding: 10px 22px;
     font-weight: bold;
     border-radius: 6px;
     cursor: pointer;
     box-shadow: 0 0 15px rgba(220, 38, 38, 0.4);
-    letter-spacing: 1px;
+    font-size: 13px;
   }
   .btn-safe {
     background: #059669;
     color: white;
     border: none;
-    padding: 12px 28px;
+    padding: 10px 22px;
     font-weight: bold;
     border-radius: 6px;
     cursor: pointer;
     box-shadow: 0 0 15px rgba(5, 150, 105, 0.4);
-    letter-spacing: 1px;
+    font-size: 13px;
   }
   .btn-phish:hover { background: #b91c1c; transform: scale(1.03); }
   .btn-safe:hover { background: #047857; transform: scale(1.03); }
+  .btn-back {
+    background: #334155;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+  }
 
-  /* FEEDBACK OVERLAY */
   #feedback-banner {
     display: none;
-    padding: 14px 20px;
+    padding: 10px 16px;
     border-radius: 6px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
     font-weight: bold;
+    font-size: 13px;
+    line-height: 1.4;
   }
-  .fb-correct { background: rgba(5, 150, 105, 0.2); border: 1px solid #10b981; color: #34d399; }
-  .fb-wrong { background: rgba(220, 38, 38, 0.2); border: 1px solid #ef4444; color: #f87171; }
+  .fb-correct { background: rgba(5, 150, 105, 0.25); border: 1px solid #10b981; color: #34d399; }
+  .fb-wrong { background: rgba(220, 38, 38, 0.25); border: 1px solid #ef4444; color: #f87171; }
 
-  /* SCREEN 4: VICTORY & PROGRESSION */
+  /* ============================================================
+     SCREEN 4A: PASSWORD FORTRESS (LEVEL 2)
+     ============================================================ */
+  #screen-password {
+    background: rgba(3, 7, 18, 0.96);
+    padding: 20px;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  .fortress-card {
+    background: var(--panel-bg);
+    border: 2px solid var(--amber);
+    border-radius: 12px;
+    padding: 24px 32px;
+    max-width: 680px;
+    width: 100%;
+    box-shadow: 0 0 40px rgba(245, 158, 11, 0.3);
+  }
+  .fortress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #334155;
+    padding-bottom: 10px;
+    margin-bottom: 16px;
+  }
+  .pw-input-box {
+    width: 100%;
+    padding: 12px 16px;
+    background: #020617;
+    border: 1px solid var(--cyan);
+    border-radius: 6px;
+    color: #f8fafc;
+    font-size: 16px;
+    font-family: monospace;
+    letter-spacing: 2px;
+    margin-bottom: 16px;
+    outline: none;
+  }
+  .pw-input-box:focus { border-color: var(--cyan-glow); box-shadow: 0 0 15px var(--cyan); }
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+    font-size: 13px;
+  }
+  .metric-item {
+    background: rgba(15, 23, 42, 0.7);
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid #1e293b;
+  }
+  .metric-item.pass { border-color: var(--green); color: #34d399; }
+  .metric-item.fail { border-color: #475569; color: #94a3b8; }
+  .crack-meter {
+    background: #020617;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 18px;
+    text-align: center;
+  }
+  .crack-time { font-size: 20px; font-weight: bold; color: var(--amber); }
+
+  /* ============================================================
+     SCREEN 4B: FINAL VICTORY & BADGE SCREEN
+     ============================================================ */
   #screen-victory {
-    background-image: url('../Game_Assets/Environment/lightning-xl_Futuristic_cyberpunk_city_skyline_at_night_towering_holographic_skyscrapers_glow-3.jpg');
+    background-image: url('Game_Assets/Environment/lightning-xl_Futuristic_cyberpunk_city_skyline_at_night_towering_holographic_skyscrapers_glow-3.jpg');
     background-color: rgba(3, 7, 18, 0.85);
     background-blend-mode: overlay;
     justify-content: center;
@@ -298,68 +532,122 @@
   }
   .victory-card {
     background: rgba(15, 23, 42, 0.95);
-    border: 2px solid #10b981;
+    border: 2px solid var(--green);
     border-radius: 12px;
-    padding: 40px;
-    box-shadow: 0 0 50px rgba(16, 185, 129, 0.3);
-    max-width: 550px;
+    padding: 26px 36px;
+    box-shadow: 0 0 50px rgba(16, 185, 129, 0.35);
+    max-width: 520px;
     display: flex;
     flex-direction: column;
     align-items: center;
   }
   .badge-img {
-    width: 140px;
-    height: 140px;
-    margin-bottom: 20px;
-    filter: drop-shadow(0 0 20px #10b981);
+    width: 110px;
+    height: 110px;
+    margin-bottom: 12px;
+    filter: drop-shadow(0 0 20px var(--green));
   }
 </style>
 </head>
 <body>
 
-<div id="game-container">
-  <!-- AUDIO ASSETS -->
-  <audio id="audio-bgm" src="../Game_Assets/Audio/Escape the Hacker_s Network OST.mp3" loop></audio>
-  <audio id="audio-boot" src="../Game_Assets/Audio/Computer Terminal Boot Beep.mp3"></audio>
-  <audio id="audio-siren" src="../Game_Assets/Audio/Phishing Alert Siren  Alarm.mp3"></audio>
-  <audio id="audio-chime" src="../Game_Assets/Audio/Success  Firewall Restored Chime.mp3"></audio>
+<div id="game-wrapper">
+  <!-- AUDIO SOURCES -->
+  <audio id="audio-bgm" src="Game_Assets/Audio/Escape the Hacker_s Network OST.mp3" loop></audio>
+  <audio id="audio-boot" src="Game_Assets/Audio/Computer Terminal Boot Beep.mp3"></audio>
+  <audio id="audio-siren" src="Game_Assets/Audio/Phishing Alert Siren  Alarm.mp3"></audio>
+  <audio id="audio-chime" src="Game_Assets/Audio/Success  Firewall Restored Chime.mp3"></audio>
 
-  <!-- SCREEN 1: MAIN MENU -->
+  <!-- PERSISTENT TOP-RIGHT AUDIO CONTROLS -->
+  <div id="audio-ctrl">
+    <button id="mute-btn" onclick="toggleMute()">🔊 AUDIO ON</button>
+  </div>
+
+  <!-- ============================================================
+       SCREEN 1: MAIN MENU
+       ============================================================ -->
   <div id="screen-menu" class="screen active">
     <div class="title-glow">Escape the Hacker's Network</div>
     <div class="subtitle">PROJECT-BASED LEARNING // CYBER-DEFENSE SIMULATION v1.0</div>
-    <button class="menu-btn" onclick="startGame()">INITIALIZE MISSION</button>
-    <button class="menu-btn" onclick="alert('Controls: Arrow Keys or WASD to Move, E to Interact at the Terminal.')">HOW TO PLAY</button>
+    <div>
+      <button class="menu-btn" onclick="startGame()">INITIALIZE MISSION</button>
+      <button class="menu-btn" onclick="openModal('modal-briefing')">MISSION BRIEFING</button>
+      <button class="menu-btn" onclick="openModal('modal-controls')">HOW TO PLAY</button>
+    </div>
   </div>
 
-  <!-- SCREEN 2: CYBER ROOM HUB -->
+  <!-- MODAL: BRIEFING -->
+  <div id="modal-briefing" class="modal-overlay">
+    <div class="modal-content">
+      <h3>⚠️ EMERGENCY NETWORK DIRECTIVE</h3>
+      <p><strong>ALERT:</strong> The rogue adversary <strong>ZERO</strong> has initiated an advanced multi-vector cyber attack against the infrastructure.</p>
+      <p>As <strong>Rei (Cybersecurity Detective)</strong>, you must navigate the control facility alongside <strong>AIRI (Tactical AI Companion)</strong>.</p>
+      <p><strong>Phase 1:</strong> Inspect incoming network transmissions at the firewall terminal to identify social engineering & phishing attacks.<br>
+      <strong>Phase 2:</strong> Breach the database perimeter through the Password Fortress to re-secure cryptographic vaults.</p>
+      <button class="close-modal-btn" onclick="closeModal('modal-briefing')">ACKNOWLEDGE</button>
+    </div>
+  </div>
+
+  <!-- MODAL: CONTROLS -->
+  <div id="modal-controls" class="modal-overlay">
+    <div class="modal-content">
+      <h3>🕹️ SIMULATION CONTROLS</h3>
+      <p><strong>Desktop Controls:</strong><br>
+      • <strong>A / D</strong> or <strong>Left / Right Arrow</strong> : Move Player<br>
+      • <strong>E</strong> : Interact with Terminal or Blast Doors<br>
+      • <strong>Mouse Click</strong> : Make decisions & review email details</p>
+      <p><strong>Mobile / Touch:</strong><br>
+      • Use the on-screen <strong>[ ⬅ LEFT ]</strong>, <strong>[ RIGHT ➡ ]</strong>, and <strong>[ [E] ACTION ]</strong> touch buttons.</p>
+      <button class="close-modal-btn" onclick="closeModal('modal-controls')">GOT IT</button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SCREEN 2: CYBER ROOM HUB
+       ============================================================ -->
   <div id="screen-room" class="screen">
     <div id="room-hud">
-      <div class="hud-stat">OPERATIVE: REI (CYBER DETECTIVE)</div>
-      <div class="hud-stat">FIREWALL INTEGRITY: <span id="room-integrity">100%</span></div>
-      <div class="hud-stat">OBJECTIVE: ACCESS SECURITY TERMINAL</div>
+      <div class="hud-stat">OPERATIVE: REI [CYBER DETECTIVE]</div>
+      <div class="hud-stat">FIREWALL INTEGRITY: <span id="room-integrity" style="color: #34d399;">100%</span></div>
+      <div class="hud-stat">ACTIVE TASK: <span id="room-task" style="color: var(--amber);">ACCESS FIREWALL TERMINAL</span></div>
     </div>
 
     <div id="player-avatar"></div>
 
+    <!-- TERMINAL INTERACTION ZONE -->
     <div id="terminal-zone">
-      <div id="prompt-badge" class="interact-badge">[ E ] ACCESS TERMINAL</div>
+      <div id="prompt-badge" class="interact-badge" onclick="openTerminal()">[ E ] ACCESS FIREWALL</div>
     </div>
 
+    <!-- BLAST DOOR ZONE (LEVEL 2) -->
+    <div id="door-zone">
+      <div id="door-badge" class="door-badge" onclick="interactDoor()">[ E ] BLAST DOOR (LOCKED)</div>
+    </div>
+
+    <!-- ON-SCREEN TOUCH CONTROLS -->
+    <div class="mobile-controls">
+      <button class="touch-btn" onclick="movePlayer(-30)">⬅ LEFT</button>
+      <button class="touch-btn" onclick="movePlayer(30)">RIGHT ➡</button>
+      <button class="touch-btn" style="background: #ef4444;" onclick="triggerAction()">[ E ] ACTION</button>
+    </div>
+
+    <!-- AIRI COMPANION DIALOGUE BAR -->
     <div id="airi-dialogue-bar">
       <div class="airi-portrait-thumb"></div>
       <div>
-        <strong style="color: #38bdf8;">AIRI:</strong>
-        <span id="airi-speech">Rei, ZERO's rogue scripts are penetrating the perimeter! Move with Arrow Keys / WASD and press [E] at the terminal to analyze incoming threats.</span>
+        <strong style="color: var(--cyan-glow);">AIRI [AI COMPANION]:</strong>
+        <span id="airi-speech">Rei, ZERO's rogue transmissions are flooding our perimeter! Move over to the central terminal and press [E] to begin threat inspection.</span>
       </div>
     </div>
   </div>
 
-  <!-- SCREEN 3: PHISHING DETECTIVE TERMINAL -->
+  <!-- ============================================================
+       SCREEN 3: PHISHING DETECTIVE TERMINAL
+       ============================================================ -->
   <div id="screen-terminal" class="screen">
     <div class="terminal-window">
       <div class="terminal-header">
-        <span>FIREWALL GATEWAY // PHISHING DETECTIVE (LEVEL 1)</span>
+        <span>SECURITY GATEWAY // LEVEL 1: PHISHING DETECTIVE</span>
         <span id="score-display">XP: 0 | ACCURACY: 0/5</span>
         <span id="integrity-display" style="color: #34d399;">INTEGRITY: 100%</span>
       </div>
@@ -368,54 +656,116 @@
         <div class="email-viewer">
           <div id="feedback-banner"></div>
           <div class="email-header-meta">
-            <div><strong style="color: #38bdf8;">From:</strong> <span id="view-sender"></span></div>
-            <div><strong style="color: #38bdf8;">Subject:</strong> <span id="view-subject"></span></div>
-            <div id="view-link-row" style="margin-top: 6px;"><strong style="color: #fbbf24;">Target Link:</strong> <span id="view-link"></span></div>
+            <div><strong style="color: var(--cyan-glow);">From:</strong> <span id="view-sender"></span></div>
+            <div><strong style="color: var(--cyan-glow);">Subject:</strong> <span id="view-subject"></span></div>
+            <div id="view-link-row" style="margin-top: 5px;"><strong style="color: #fbbf24;">Target Link:</strong> <span id="view-link"></span></div>
             <div id="view-attach-row" style="display: none; margin-top: 4px;"><strong style="color: #f87171;">Attachment:</strong> <span id="view-attach"></span></div>
           </div>
           <div class="email-body-text" id="view-body"></div>
           <div class="decision-bar">
-            <button class="btn-phish" onclick="makeDecision(true)">🚩 REPORT PHISHING</button>
-            <button class="btn-safe" onclick="makeDecision(false)">🛡️ MARK AS SAFE</button>
+            <button class="btn-back" onclick="exitTerminalToRoom()">⬅ RETURN TO HUB</button>
+            <div style="display: flex; gap: 12px;">
+              <button class="btn-phish" onclick="makeDecision(true)">🚩 REPORT PHISHING</button>
+              <button class="btn-safe" onclick="makeDecision(false)">🛡️ MARK AS SAFE</button>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- SCREEN 4: VICTORY & PROGRESSION -->
+  <!-- ============================================================
+       SCREEN 4A: PASSWORD FORTRESS (LEVEL 2)
+       ============================================================ -->
+  <div id="screen-password" class="screen">
+    <div class="fortress-card">
+      <div class="fortress-header">
+        <h3 style="color: var(--amber); font-size: 20px;">🔐 LEVEL 2: PASSWORD FORTRESS CRACKING LAB</h3>
+        <button class="btn-back" onclick="exitPasswordToRoom()">⬅ BACK TO HUB</button>
+      </div>
+      <p style="font-size: 13px; color: #94a3b8; margin-bottom: 12px;">
+        ZERO has protected the core cryptographic vault. Test password defense entropy to calculate brute-force cracking resistance.
+      </p>
+
+      <input type="text" id="pw-input" class="pw-input-box" placeholder="Type a password to test entropy..." value="H@ck3r_N3tw0rk_2026!" oninput="evaluatePassword(this.value)">
+
+      <div class="metrics-grid">
+        <div id="m-len" class="metric-item fail">✓ Length (12+ characters)</div>
+        <div id="m-upper" class="metric-item fail">✓ Uppercase Letter (A-Z)</div>
+        <div id="m-lower" class="metric-item fail">✓ Lowercase Letter (a-z)</div>
+        <div id="m-num" class="metric-item fail">✓ Number (0-9)</div>
+        <div id="m-sym" class="metric-item fail" style="grid-column: span 2;">✓ Special Symbol (!@#$%^&*)</div>
+      </div>
+
+      <div class="crack-meter">
+        <div style="font-size: 12px; color: #94a3b8; margin-bottom: 4px;">ESTIMATED TIME TO CRACK VIA BRUTE FORCE (RTX 4090 CLUSTER)</div>
+        <div id="crack-time-display" class="crack-time">CALCULATING...</div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-back" style="font-size: 11px;" onclick="setSamplePassword('password123')">Test 'password123'</button>
+          <button class="btn-back" style="font-size: 11px;" onclick="setSamplePassword('Admin#2026')">Test 'Admin#2026'</button>
+          <button class="btn-back" style="font-size: 11px;" onclick="setSamplePassword('X9#kL!vP92$mQz')">Test Strong</button>
+        </div>
+        <button class="btn-safe" onclick="completePasswordLevel()">SUBMIT ENCRYPTION KEY</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SCREEN 4B: FINAL VICTORY & MILESTONE SCREEN
+       ============================================================ -->
   <div id="screen-victory" class="screen">
     <div class="victory-card">
-      <img src="../Game_Assets/UI_Minigames/Firewall_Restored_Badge.png" class="badge-img" alt="Badge">
-      <h2 style="color: #10b981; font-size: 28px; margin-bottom: 8px;">FIREWALL RESTORED!</h2>
-      <p style="color: #94a3b8; margin-bottom: 20px;">Threat perimeter locked down. Zero's phishing attack mitigated.</p>
-      <div style="font-size: 18px; margin-bottom: 10px; color: #38bdf8;" id="final-stats">Total XP: 500 | Grade: RANK S</div>
-      <p style="font-size: 14px; color: #e2e8f0; margin-bottom: 24px;">Level 2 (Password Fortress) blast door is now unlocked in the control hub.</p>
-      <button class="menu-btn" onclick="restartToRoom()">CONTINUE MISSION</button>
-      <button class="menu-btn" onclick="location.reload()">RETURN TO MENU</button>
+      <img src="Game_Assets/UI_Minigames/Firewall_Restored_Badge.png" class="badge-img" alt="Badge">
+      <h2 style="color: var(--green); font-size: 26px; margin-bottom: 6px;">FIREWALL RESTORED!</h2>
+      <p style="color: #94a3b8; margin-bottom: 14px; font-size: 14px;">Threat perimeter locked down. Zero's phishing assault neutralized.</p>
+      <div style="font-size: 17px; margin-bottom: 8px; color: var(--cyan-glow);" id="final-stats">Total XP: 500 | Grade: RANK S</div>
+      <p style="font-size: 13px; color: #cbd5e1; margin-bottom: 20px;">
+        Level 2 (Password Fortress) blast door is now accessible in the command center.
+      </p>
+      <div>
+        <button class="menu-btn" onclick="continueToLevel2()">ENTER LEVEL 2</button>
+        <button class="menu-btn" onclick="restartToRoom()">EXPLORE HUB</button>
+        <button class="menu-btn" onclick="location.reload()">MAIN MENU</button>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
-  // AUDIO CONTROLS
+  // AUDIO ENGINE
   const bgm = document.getElementById('audio-bgm');
   const sfxBoot = document.getElementById('audio-boot');
   const sfxSiren = document.getElementById('audio-siren');
   const sfxChime = document.getElementById('audio-chime');
+  let isMuted = false;
+
+  function toggleMute() {
+    isMuted = !isMuted;
+    bgm.muted = isMuted;
+    sfxBoot.muted = isMuted;
+    sfxSiren.muted = isMuted;
+    sfxChime.muted = isMuted;
+    document.getElementById('mute-btn').textContent = isMuted ? '🔇 MUTED' : '🔊 AUDIO ON';
+  }
 
   function playSFX(audioElem) {
-    if (audioElem) {
+    if (audioElem && !isMuted) {
       audioElem.currentTime = 0;
-      audioElem.play().catch(e => console.log('Audio wait'));
+      audioElem.play().catch(() => {});
     }
   }
 
-  // SCREEN SWITCHING
+  // SCREEN NAVIGATION
   function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(screenId).classList.add('active');
   }
+
+  function openModal(modalId) { document.getElementById(modalId).style.display = 'flex'; }
+  function closeModal(modalId) { document.getElementById(modalId).style.display = 'none'; }
 
   function startGame() {
     bgm.volume = 0.35;
@@ -423,33 +773,53 @@
     showScreen('screen-room');
   }
 
-  // PLAYER MOVEMENT IN SCREEN 2
+  // PLAYER PHYSICS & MOVEMENT (SCREEN 2)
   let posX = 140;
   let moveLocked = false;
+  let level1Completed = false;
   const player = document.getElementById('player-avatar');
   const promptBadge = document.getElementById('prompt-badge');
+  const doorBadge = document.getElementById('door-badge');
   const terminalTriggerX = 860;
+  const doorTriggerX = 1060;
+
+  function movePlayer(delta) {
+    if (moveLocked) return;
+    posX = Math.max(80, Math.min(1100, posX + delta));
+    player.style.left = posX + 'px';
+    player.style.transform = delta >= 0 ? 'scaleX(1)' : 'scaleX(-1)';
+
+    // Terminal proximity
+    if (Math.abs(posX - terminalTriggerX) < 100) {
+      promptBadge.style.display = 'block';
+    } else {
+      promptBadge.style.display = 'none';
+    }
+
+    // Door proximity
+    if (Math.abs(posX - doorTriggerX) < 90) {
+      doorBadge.style.display = 'block';
+    } else {
+      doorBadge.style.display = 'none';
+    }
+  }
+
+  function triggerAction() {
+    if (Math.abs(posX - terminalTriggerX) < 100) {
+      openTerminal();
+    } else if (Math.abs(posX - doorTriggerX) < 90) {
+      interactDoor();
+    }
+  }
 
   window.addEventListener('keydown', (e) => {
     if (document.getElementById('screen-room').classList.contains('active') && !moveLocked) {
       if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
-        posX = Math.min(1080, posX + 20);
-        player.style.left = posX + 'px';
-        player.style.transform = 'scaleX(1)';
+        movePlayer(22);
       } else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
-        posX = Math.max(80, posX - 20);
-        player.style.left = posX + 'px';
-        player.style.transform = 'scaleX(-1)';
-      }
-
-      // Check proximity to terminal
-      if (Math.abs(posX - terminalTriggerX) < 100) {
-        promptBadge.style.display = 'block';
-        if (e.key === 'e' || e.key === 'E') {
-          openTerminal();
-        }
-      } else {
-        promptBadge.style.display = 'none';
+        movePlayer(-22);
+      } else if (e.key === 'e' || e.key === 'E') {
+        triggerAction();
       }
     }
   });
@@ -461,7 +831,30 @@
     renderEmails();
   }
 
-  // SCREEN 3: PHISHING DETECTIVE ENGINE
+  function exitTerminalToRoom() {
+    moveLocked = false;
+    showScreen('screen-room');
+  }
+
+  function interactDoor() {
+    if (!level1Completed) {
+      playSFX(sfxSiren);
+      document.getElementById('airi-speech').textContent = "Access Denied! You must neutralize all 5 phishing vectors in the terminal first before the blast door unseals.";
+    } else {
+      playSFX(sfxBoot);
+      showScreen('screen-password');
+      evaluatePassword(document.getElementById('pw-input').value);
+    }
+  }
+
+  function exitPasswordToRoom() {
+    moveLocked = false;
+    showScreen('screen-room');
+  }
+
+  // ============================================================
+  // LEVEL 1: PHISHING DETECTIVE ENGINE
+  // ============================================================
   const emails = [
     {
       id: 1,
@@ -471,7 +864,7 @@
       attach: "Account_Log.zip",
       body: "Dear Valued User,\n\nWe detected unauthorized login attempts from an untrusted IP address. You must verify your credentials within 15 minutes or your account will be permanently deactivated.",
       isPhish: true,
-      explanation: "Look closely at the sender domain: 'micr0soft.co' with a zero instead of 'o', paired with artificial urgency and a fake login link!"
+      explanation: "Look closely at the sender domain: 'micr0soft.co' with a zero instead of 'o', paired with artificial panic and a deceptive URL!"
     },
     {
       id: 2,
@@ -527,7 +920,8 @@
     emails.forEach((em, i) => {
       const item = document.createElement('div');
       item.className = 'inbox-item' + (i === currentIdx ? ' active' : '');
-      item.innerHTML = `<strong>#${em.id} ${em.subject.substring(0, 26)}...</strong><br><small style="color: #64748b;">${em.sender.split('<')[0]}</small>`;
+      const statusIcon = evaluated[i] ? '✓ ' : '✉ ';
+      item.innerHTML = `<strong>${statusIcon}#${em.id} ${em.subject.substring(0, 24)}...</strong><br><small style="color: #64748b;">${em.sender.split('<')[0]}</small>`;
       item.onclick = () => { currentIdx = i; renderEmails(); };
       list.appendChild(item);
     });
@@ -576,22 +970,114 @@
     document.getElementById('room-integrity').textContent = `${integrity}%`;
 
     setTimeout(() => {
-      if (currentIdx + 1 < emails.length) {
-        currentIdx++;
+      // Find next un-evaluated email
+      const nextUnresolved = evaluated.findIndex(e => e === false);
+      if (nextUnresolved !== -1) {
+        currentIdx = nextUnresolved;
         renderEmails();
       } else {
-        // Complete Level 1 -> Screen 4
+        // All 5 completed
+        level1Completed = true;
         showScreen('screen-victory');
         playSFX(sfxChime);
-        document.getElementById('final-stats').textContent = `Total XP: ${score} | Accuracy: ${correctDecisions}/5 | Firewall: ${integrity}%`;
+
+        const rank = correctDecisions >= 4 ? 'RANK S [SENIOR DEFENDER]' : 'RANK A [CERTIFIED]';
+        document.getElementById('final-stats').textContent = `Total XP: ${score} | Accuracy: ${correctDecisions}/5 | Grade: ${rank}`;
+
+        // Unlock blast door in hub
+        doorBadge.className = 'door-badge unlocked';
+        doorBadge.textContent = '[ E ] ENTER LEVEL 2';
+        document.getElementById('room-task').textContent = 'BLAST DOOR UNLOCKED: LEVEL 2';
+        document.getElementById('room-task').style.color = '#34d399';
       }
-    }, 2400);
+    }, 2200);
+  }
+
+  function continueToLevel2() {
+    showScreen('screen-password');
+    evaluatePassword(document.getElementById('pw-input').value);
   }
 
   function restartToRoom() {
     moveLocked = false;
     showScreen('screen-room');
-    document.getElementById('airi-speech').textContent = "Excellent job, Rei! The firewall perimeter is secure. Walk right to the unlocked blast door to access Level 2: Password Fortress!";
+    document.getElementById('airi-speech').textContent = "Outstanding work, Rei! The firewall perimeter has been secured. Now walk over to the right and enter the Password Fortress!";
+  }
+
+  // ============================================================
+  // LEVEL 2: PASSWORD FORTRESS ENGINE
+  // ============================================================
+  function setSamplePassword(pw) {
+    const input = document.getElementById('pw-input');
+    input.value = pw;
+    evaluatePassword(pw);
+  }
+
+  function evaluatePassword(pw) {
+    const hasLen = pw.length >= 12;
+    const hasUpper = /[A-Z]/.test(pw);
+    const hasLower = /[a-z]/.test(pw);
+    const hasNum = /[0-9]/.test(pw);
+    const hasSym = /[^A-Za-z0-9]/.test(pw);
+
+    updateMetric('m-len', hasLen);
+    updateMetric('m-upper', hasUpper);
+    updateMetric('m-lower', hasLower);
+    updateMetric('m-num', hasNum);
+    updateMetric('m-sym', hasSym);
+
+    // Calculate Brute Force Crack Time
+    let poolSize = 0;
+    if (hasLower) poolSize += 26;
+    if (hasUpper) poolSize += 26;
+    if (hasNum) poolSize += 10;
+    if (hasSym) poolSize += 33;
+    if (poolSize === 0) poolSize = 1;
+
+    // Total combinations: poolSize ^ length
+    const totalCombos = Math.pow(poolSize, pw.length);
+    const guessesPerSec = 1e11; // 100 billion guesses/sec
+    const seconds = totalCombos / (2 * guessesPerSec);
+
+    const display = document.getElementById('crack-time-display');
+    if (seconds < 1) {
+      display.textContent = "⚡ INSTANTLY CRACKED (< 1 second)";
+      display.style.color = "var(--red)";
+    } else if (seconds < 60) {
+      display.textContent = `${Math.round(seconds)} SECONDS (HIGHLY VULNERABLE)`;
+      display.style.color = "var(--red)";
+    } else if (seconds < 3600) {
+      display.textContent = `${Math.round(seconds / 60)} MINUTES (WEAK)`;
+      display.style.color = "var(--amber)";
+    } else if (seconds < 86400 * 30) {
+      display.textContent = `${Math.round(seconds / 86400)} DAYS (MODERATE)`;
+      display.style.color = "var(--amber)";
+    } else if (seconds < 86400 * 365 * 100) {
+      display.textContent = `${Math.round(seconds / (86400 * 365))} YEARS (SECURE)`;
+      display.style.color = "var(--green)";
+    } else {
+      display.textContent = "🛡️ 14,000+ YEARS (UNBREAKABLE QUANTUM-RESISTANT)";
+      display.style.color = "var(--cyan-glow)";
+    }
+  }
+
+  function updateMetric(id, pass) {
+    const el = document.getElementById(id);
+    el.className = pass ? 'metric-item pass' : 'metric-item fail';
+  }
+
+  function completePasswordLevel() {
+    const pw = document.getElementById('pw-input').value;
+    if (pw.length < 12) {
+      playSFX(sfxSiren);
+      alert("Password does not meet minimum defense criteria (Must be at least 12 characters with mixed complexity)!");
+      return;
+    }
+    playSFX(sfxChime);
+    score += 250;
+    alert("CRYPTOGRAPHIC VAULT SECURED! (+250 XP)\nYou have successfully contained ZERO's breach across all network sectors!");
+    showScreen('screen-victory');
+    document.getElementById('final-stats').textContent = `Total XP: ${score} | All Sectors Secured | Grade: RANK S+ (MASTER ANALYST)`;
   }
 </script>
 </body>
