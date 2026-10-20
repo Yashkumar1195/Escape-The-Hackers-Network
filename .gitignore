@@ -17,3 +17,6 @@ desktop.ini
 *.pidb.meta
 *.pdb
 *.mdb
+
+# Enterprise SIEM Lab (separate repo)
+enterprise-siem-lab/
